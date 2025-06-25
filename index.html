@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>M-Contribuição (INSS) - Simulador USSD Offline</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<div class="phone-container">
+  <div class="screen">
+    <div class="status-bar">
+      <span>Vodacom</span>
+      <span id="current-time">12:30</span>
+      <span>85%</span>
+    </div>
+
+    <!-- Tela do Discador -->
+    <div class="dialer-screen" id="dialer-screen">
+      <div class="dialer-header">
+        <h1>Telefone</h1>
+        <input
+          type="text"
+          class="number-input"
+          id="number-input"
+          placeholder="Digite o número"
+          readonly
+        />
+      </div>
+
+      <div class="keypad">
+        <button class="key" onclick="addDigit('1')">1</button>
+        <button class="key" onclick="addDigit('2')">2<br /><small>ABC</small></button>
+        <button class="key" onclick="addDigit('3')">3<br /><small>DEF</small></button>
+        <button class="key" onclick="addDigit('4')">4<br /><small>GHI</small></button>
+        <button class="key" onclick="addDigit('5')">5<br /><small>JKL</small></button>
+        <button class="key" onclick="addDigit('6')">6<br /><small>MNO</small></button>
+        <button class="key" onclick="addDigit('7')">7<br /><small>PQRS</small></button>
+        <button class="key" onclick="addDigit('8')">8<br /><small>TUV</small></button>
+        <button class="key" onclick="addDigit('9')">9<br /><small>WXYZ</small></button>
+        <button class="key" onclick="addDigit('*')">*</button>
+        <button class="key" onclick="addDigit('0')">0<br /><small>+</small></button>
+        <button class="key" onclick="addDigit('#')">#</button>
+      </div>
+
+      <div style="display: flex; justify-content: center;">
+        <button class="call-button" onclick="makeCall()">CALL</button>
+      </div>
+    </div>
+
+    <!-- Tela USSD -->
+    <div class="ussd-screen" id="ussd-screen">
+      <div class="ussd-header">
+        <h1>M-Contribuição (INSS)</h1>
+      </div>
+      <div class="ussd-content" id="ussd-content">
+        <!-- Conteúdo será inserido aqui -->
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="ussd.js"></script>
+</body>
+</html>
