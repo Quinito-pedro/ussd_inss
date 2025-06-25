@@ -1,65 +1,723 @@
 <!DOCTYPE html>
 <html lang="pt-PT">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>M-Contribuição (INSS) - Simulador USSD Offline</title>
-<link rel="stylesheet" href="style.css" />
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>M-Contribuição (INSS) - Sistema USSD Offline</title>
+    <style>
+        * {
+            margin: 0; padding: 0; box-sizing: border-box;
+        }
+        body {
+            font-family: 'Roboto', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex; justify-content: center; align-items: center;
+            min-height: 100vh; padding: 10px;
+        }
+        .phone-container {
+            width: min(320px, 90vw);
+            height: min(500px, 85vh);
+            background: #1a1a1a;
+            border-radius: 25px;
+            padding: 10px;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.3), inset 0 0 0 2px #333;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+        .screen {
+            flex: 1;
+            background: #000;
+            border-radius: 18px;
+            overflow: hidden;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+        .status-bar {
+            background: #000;
+            color: white;
+            padding: 6px 12px;
+            font-size: 11px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .dialer-screen {
+            background: #1b5e20;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+        .dialer-header {
+            background: #2e7d32;
+            color: white;
+            padding: 15px;
+            text-align: center;
+        }
+        .dialer-header h1 {
+            font-size: 16px;
+            margin-bottom: 5px;
+        }
+        .number-input {
+            background: rgba(255,255,255,0.1);
+            border: none;
+            color: white;
+            font-size: 18px;
+            text-align: center;
+            padding: 10px;
+            margin: 8px 0;
+            border-radius: 6px;
+            letter-spacing: 1px;
+            user-select: none;
+        }
+        .keypad {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            padding: 15px;
+            flex-grow: 1;
+            justify-items: center;
+            align-content: center;
+        }
+        .key {
+            background: rgba(255,255,255,0.15);
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            color: white;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            user-select: none;
+        }
+        .key:hover {
+            background: rgba(255,255,255,0.25);
+            transform: scale(1.05);
+        }
+        .key:active {
+            transform: scale(0.95);
+        }
+        .key small {
+            font-size: 8px;
+            position: absolute;
+            margin-top: 20px;
+            pointer-events: none;
+            user-select: none;
+        }
+        .call-button {
+            background: #4caf50;
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            color: white;
+            font-size: 18px;
+            cursor: pointer;
+            margin: 15px auto 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            user-select: none;
+        }
+        .call-button:hover {
+            background: #45a049;
+            transform: scale(1.05);
+        }
+        .ussd-screen {
+            background: #000;
+            color: white;
+            height: 100%;
+            display: none;
+            flex-direction: column;
+            padding: 15px;
+            overflow-y: auto;
+        }
+        .ussd-screen.active {
+            display: flex;
+        }
+        .ussd-header {
+            text-align: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #333;
+        }
+        .ussd-header h1 {
+            font-size: 14px;
+            color: #4caf50;
+        }
+        .ussd-content {
+            flex-grow: 1;
+            font-size: 13px;
+            white-space: pre-wrap;
+            font-family: monospace, monospace;
+        }
+        .loading {
+            text-align: center;
+            padding: 30px 15px;
+        }
+        .spinner {
+            border: 2px solid #333;
+            border-top: 2px solid #4caf50;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg);}
+            100% { transform: rotate(360deg);}
+        }
+        @media (max-width: 320px) {
+            .phone-container {
+                width: 95vw;
+                height: 80vh;
+            }
+            .key {
+                width: 40px;
+                height: 40px;
+                font-size: 16px;
+            }
+            .ussd-content {
+                font-size: 11px;
+            }
+        }
+    </style>
 </head>
 <body>
-<div class="phone-container">
-  <div class="screen">
-    <div class="status-bar">
-      <span>Vodacom</span>
-      <span id="current-time">12:30</span>
-      <span>85%</span>
+    <div class="phone-container">
+        <div class="screen">
+            <div class="status-bar">
+                <span>Vodacom</span>
+                <span id="current-time">12:30</span>
+                <span>85%</span>
+            </div>
+
+            <!-- Tela do Discador -->
+            <div class="dialer-screen" id="dialer-screen">
+                <div class="dialer-header">
+                    <h1>Telefone</h1>
+                    <input
+                      type="text"
+                      class="number-input"
+                      id="number-input"
+                      placeholder="Digite o número"
+                      readonly
+                      autocomplete="off"
+                    />
+                </div>
+
+                <div class="keypad">
+                    <button class="key" onclick="addDigit('1')">1</button>
+                    <button class="key" onclick="addDigit('2')">2<br /><small>ABC</small></button>
+                    <button class="key" onclick="addDigit('3')">3<br /><small>DEF</small></button>
+                    <button class="key" onclick="backspace()">⌫</button>
+
+                    <button class="key" onclick="addDigit('4')">4<br /><small>GHI</small></button>
+                    <button class="key" onclick="addDigit('5')">5<br /><small>JKL</small></button>
+                    <button class="key" onclick="addDigit('6')">6<br /><small>MNO</small></button>
+                    <div></div>
+
+                    <button class="key" onclick="addDigit('7')">7<br /><small>PQRS</small></button>
+                    <button class="key" onclick="addDigit('8')">8<br /><small>TUV</small></button>
+                    <button class="key" onclick="addDigit('9')">9<br /><small>WXYZ</small></button>
+                    <div></div>
+
+                    <button class="key" onclick="addDigit('*')">*</button>
+                    <button class="key" onclick="addDigit('0')">0<br /><small>+</small></button>
+                    <button class="key" onclick="addDigit('#')">#</button>
+                    <div></div>
+                </div>
+
+                <div style="display: flex; justify-content: center;">
+                    <button class="call-button" onclick="makeCall()">CALL</button>
+                </div>
+            </div>
+
+            <!-- Tela USSD -->
+            <div class="ussd-screen" id="ussd-screen">
+                <div class="ussd-header">
+                    <h1>M-Contribuição (INSS)</h1>
+                </div>
+                <div class="ussd-content" id="ussd-content">
+                    <!-- Conteúdo será inserido aqui -->
+                </div>
+            </div>
+        </div>
     </div>
 
-    <!-- Tela do Discador -->
-    <div class="dialer-screen" id="dialer-screen">
-      <div class="dialer-header">
-        <h1>Telefone</h1>
-        <input
-          type="text"
-          class="number-input"
-          id="number-input"
-          placeholder="Digite o número"
-          readonly
-        />
-      </div>
+    <script>
+        let currentNumber = '';
+        let currentMenu = 'main';
+        let menuHistory = [];
+        let lastErrorMsg = '';
 
-      <div class="keypad">
-        <button class="key" onclick="addDigit('1')">1</button>
-        <button class="key" onclick="addDigit('2')">2<br /><small>ABC</small></button>
-        <button class="key" onclick="addDigit('3')">3<br /><small>DEF</small></button>
-        <button class="key" onclick="addDigit('4')">4<br /><small>GHI</small></button>
-        <button class="key" onclick="addDigit('5')">5<br /><small>JKL</small></button>
-        <button class="key" onclick="addDigit('6')">6<br /><small>MNO</small></button>
-        <button class="key" onclick="addDigit('7')">7<br /><small>PQRS</small></button>
-        <button class="key" onclick="addDigit('8')">8<br /><small>TUV</small></button>
-        <button class="key" onclick="addDigit('9')">9<br /><small>WXYZ</small></button>
-        <button class="key" onclick="addDigit('*')">*</button>
-        <button class="key" onclick="addDigit('0')">0<br /><small>+</small></button>
-        <button class="key" onclick="addDigit('#')">#</button>
-      </div>
+        // Dados mock para simulação
+        const mockUser = {
+            nome: 'João António Silva',
+            inscricao: '123456789',
+            nascimento: '01/01/1980',
+            estado: 'Activo',
+            ultimaContribuicao: 'Maio/2025',
+            totalMesesDeclarados: 60,
+            totalMesesPagos: 55,
+            mesesDivida: 5,
+            valorContribuicao: '2.500,00 MT',
+            requerimentos: [
+                {
+                    id: '2025001',
+                    tipo: 'Pensão de Velhice',
+                    estado: 'Em análise',
+                    data: '15/05/2025',
+                },
+            ],
+            contatos: {
+                sede: 'Av. 24 de Julho, no 3549, 6º andar, Maputo',
+                telefones: ['+258 867455868', '+258 84 4909293'],
+                email: 'inss@inss.gov.mz',
+                horario: 'Segunda a Sexta: 07:30 - 15:30',
+                portal: 'www.inss.gov.mz',
+            },
+        };
 
-      <div style="display: flex; justify-content: center;">
-        <button class="call-button" onclick="makeCall()">CALL</button>
-      </div>
-    </div>
+        // Atualizar horário no status bar
+        function updateTime() {
+            const now = new Date();
+            const time =
+                now.getHours().toString().padStart(2, '0') +
+                ':' +
+                now.getMinutes().toString().padStart(2, '0');
+            document.getElementById('current-time').textContent = time;
+        }
+        updateTime();
+        setInterval(updateTime, 60000);
 
-    <!-- Tela USSD -->
-    <div class="ussd-screen" id="ussd-screen">
-      <div class="ussd-header">
-        <h1>M-Contribuição (INSS)</h1>
-      </div>
-      <div class="ussd-content" id="ussd-content">
-        <!-- Conteúdo será inserido aqui -->
-      </div>
-    </div>
-  </div>
-</div>
+        // Adicionar dígito no discador
+        function addDigit(digit) {
+            if (digit.length === 1) {
+                currentNumber += digit;
+                updateNumberInput();
+            }
+        }
 
-<script src="ussd.js"></script>
+        // Atualizar campo do número
+        function updateNumberInput() {
+            document.getElementById('number-input').value = currentNumber;
+        }
+
+        // Botão Apagar dígito
+        function backspace() {
+            currentNumber = currentNumber.slice(0, -1);
+            updateNumberInput();
+        }
+
+        // Limpar número no discador
+        function clearNumber() {
+            currentNumber = '';
+            updateNumberInput();
+        }
+
+        // Mostrar loading
+        function showLoading(text = 'Conectando ao INSS...') {
+            document.getElementById('ussd-content').innerHTML = `
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>${text}</p>
+                </div>
+            `;
+        }
+
+        // Abrir tela USSD e mostrar menu principal
+        function openUssdScreen() {
+            document.getElementById('dialer-screen').style.display = 'none';
+            document.getElementById('ussd-screen').classList.add('active');
+            lastErrorMsg = '';
+            showMainMenu();
+        }
+
+        // Voltar para discador
+        function closeUssdScreen() {
+            document.getElementById('ussd-screen').classList.remove('active');
+            document.getElementById('dialer-screen').style.display = 'flex';
+            clearNumber();
+            currentMenu = 'main';
+            menuHistory = [];
+            lastErrorMsg = '';
+        }
+
+        // Fazer chamada
+        function makeCall() {
+            if (currentNumber === '*122#') {
+                showLoading();
+                setTimeout(() => {
+                    openUssdScreen();
+                }, 1500);
+            } else if (currentNumber.trim() === '') {
+                alert('Digite um número primeiro');
+            } else {
+                alert('Código USSD inválido. Use *122# para acessar o INSS');
+                clearNumber();
+            }
+        }
+
+        // Voltar no menu
+        function goBack() {
+            if (menuHistory.length > 0) {
+                const previousMenu = menuHistory.pop();
+                navigateToMenu(previousMenu);
+            } else {
+                showMainMenu();
+            }
+            lastErrorMsg = '';
+        }
+
+        // Navegação para menus
+        function navigateToMenu(menu) {
+            lastErrorMsg = '';
+            switch (menu) {
+                case 'main':
+                    showMainMenu();
+                    break;
+                case 'painel':
+                    showPainelBeneficiario();
+                    break;
+                case 'extracto':
+                    showExtracto();
+                    break;
+                case 'dados':
+                    showDadosCadastrais();
+                    break;
+                case 'requerimentos':
+                    showRequerimentos();
+                    break;
+                case 'maternidade':
+                    showMaternidade();
+                    break;
+                case 'maisinfo':
+                    showMaisInformacoes();
+                    break;
+                case 'contatos':
+                    showContacts();
+                    break;
+                case 'sobre':
+                    showSobre();
+                    break;
+                case 'ajuda':
+                    showAjuda();
+                    break;
+                default:
+                    showMainMenu();
+                    break;
+            }
+        }
+
+        // Selecionar opção do menu via teclado
+        function selectOption(option) {
+            lastErrorMsg = '';
+            if (currentMenu === 'main') {
+                if (['0', '1', '2', '3', '4', '5', '6'].includes(option)) {
+                    menuHistory.push(currentMenu);
+                    switch (option) {
+                        case '1':
+                            currentMenu = 'painel';
+                            showPainelBeneficiario();
+                            break;
+                        case '2':
+                            currentMenu = 'extracto';
+                            showExtracto();
+                            break;
+                        case '3':
+                            currentMenu = 'dados';
+                            showDadosCadastrais();
+                            break;
+                        case '4':
+                            currentMenu = 'requerimentos';
+                            showRequerimentos();
+                            break;
+                        case '5':
+                            currentMenu = 'maternidade';
+                            showMaternidade();
+                            break;
+                        case '6':
+                            currentMenu = 'maisinfo';
+                            showMaisInformacoes();
+                            break;
+                        case '0':
+                            endSession();
+                            break;
+                    }
+                } else {
+                    lastErrorMsg = 'Opção inválida. Tente novamente.';
+                    showMainMenu(true);
+                }
+            } else if (currentMenu === 'maisinfo') {
+                if (['1', '2', '3', '0', '9'].includes(option)) {
+                    menuHistory.push(currentMenu);
+                    switch (option) {
+                        case '1':
+                            currentMenu = 'contatos';
+                            showContacts();
+                            break;
+                        case '2':
+                            currentMenu = 'sobre';
+                            showSobre();
+                            break;
+                        case '3':
+                            currentMenu = 'ajuda';
+                            showAjuda();
+                            break;
+                        case '0':
+                            goBack();
+                            break;
+                        case '9':
+                            endSession();
+                            break;
+                    }
+                } else {
+                    lastErrorMsg = 'Opção inválida no submenu. Tente novamente.';
+                    showMaisInformacoes(true);
+                }
+            } else {
+                // Outros menus aceitam só voltar ou sair
+                if (option === '0') {
+                    endSession();
+                } else if (option === '9' || option.toLowerCase() === 'b') {
+                    goBack();
+                } else {
+                    lastErrorMsg = 'Opção inválida. Use 0 para sair, 9 para voltar.';
+                    navigateToMenu(currentMenu);
+                }
+            }
+        }
+
+        // Menus
+
+        function showMainMenu(showError = false) {
+            currentMenu = 'main';
+            menuHistory = [];
+            let errorHTML = '';
+            if (showError && lastErrorMsg) {
+                errorHTML = `<p style="color:#f44336; font-weight:bold; margin-bottom:10px;">${lastErrorMsg}</p>`;
+            }
+            document.getElementById('ussd-content').innerHTML = `
+                <h2>INSS Moçambique</h2>
+                ${errorHTML}
+                <p><strong>Selecione uma opção (digite o número):</strong></p>
+                <pre>
+1. Painel do Beneficiário
+2. Extrato do Beneficiário
+3. Dados Cadastrais
+4. Requerimentos
+5. Maternidade
+6. Mais Informações
+0. Sair
+                </pre>
+                <p style="font-size: 11px; margin-top: 10px;">Digite o número e pressione a tecla numérica.</p>
+            `;
+        }
+
+        function showPainelBeneficiario() {
+            document.getElementById('ussd-content').innerHTML = `
+                <h2>Painel do Beneficiário</h2>
+                <pre>
+Nome: ${mockUser.nome}
+No Inscrição: ${mockUser.inscricao}
+Estado: ${mockUser.estado}
+Última Contribuição: ${mockUser.ultimaContribuicao}
+
+Digite 9 para Voltar
+Digite 0 para Sair
+                </pre>
+            `;
+        }
+
+        function showExtracto() {
+            document.getElementById('ussd-content').innerHTML = `
+                <h2>Extrato do Beneficiário</h2>
+                <pre>
+Total de Meses Declarados: ${mockUser.totalMesesDeclarados}
+Total de Meses Pagos: ${mockUser.totalMesesPagos}
+Meses em Dívida: ${mockUser.mesesDivida}
+Última Contribuição: ${mockUser.ultimaContribuicao}
+Valor: ${mockUser.valorContribuicao}
+
+Digite 9 para Voltar
+Digite 0 para Sair
+                </pre>
+            `;
+        }
+
+        function showDadosCadastrais() {
+            document.getElementById('ussd-content').innerHTML = `
+                <h2>Dados Cadastrais</h2>
+                <pre>
+Nome Completo: ${mockUser.nome}
+No Inscrição: ${mockUser.inscricao}
+Data de Nascimento: ${mockUser.nascimento}
+Estado: ${mockUser.estado}
+
+Digite 9 para Voltar
+Digite 0 para Sair
+                </pre>
+            `;
+        }
+
+        function showRequerimentos() {
+            let reqText = '';
+            mockUser.requerimentos.forEach((req) => {
+                reqText += `
+Requerimento #${req.id}
+Tipo: ${req.tipo}
+Estado: ${req.estado}
+Data: ${req.data}
+
+`;
+            });
+            document.getElementById('ussd-content').innerHTML = `
+                <h2>Verificar Requerimentos</h2>
+                <pre>
+Estado dos seus requerimentos:
+
+${reqText}
+Para mais detalhes, contacte a delegação ou acesse o portal online.
+
+Digite 9 para Voltar
+Digite 0 para Sair
+                </pre>
+            `;
+        }
+
+        function showMaternidade() {
+            document.getElementById('ussd-content').innerHTML = `
+                <h2>Maternidade</h2>
+                <pre>
+Benefícios relacionados à maternidade:
+- Licença maternidade remunerada
+- Auxílio pré-natal
+- Assistência médica e hospitalar
+
+Para solicitar, dirija-se à delegação mais próxima com os documentos necessários.
+
+Digite 9 para Voltar
+Digite 0 para Sair
+                </pre>
+            `;
+        }
+
+        function showMaisInformacoes(showError = false) {
+            let errorHTML = '';
+            if (showError && lastErrorMsg) {
+                errorHTML = `\n${lastErrorMsg}\n`;
+            }
+            document.getElementById('ussd-content').innerHTML = `
+                <h2>Mais Informações</h2>
+                <pre>
+Digite o número:
+
+1. Contactos INSS
+2. Sobre o INSS
+3. Ajuda
+0. Voltar
+9. Sair
+${errorHTML}
+                </pre>
+            `;
+        }
+
+        function showContacts() {
+            document.getElementById('ussd-content').innerHTML = `
+                <h2>Contactos INSS</h2>
+                <pre>
+Sede Nacional:
+${mockUser.contatos.sede}
+${mockUser.contatos.telefones.join('\n')}
+${mockUser.contatos.email}
+
+Horário de Atendimento:
+${mockUser.contatos.horario}
+
+Portal Online:
+${mockUser.contatos.portal}
+
+Digite 9 para Voltar
+Digite 0 para Sair
+                </pre>
+            `;
+        }
+
+        function showSobre() {
+            document.getElementById('ussd-content').innerHTML = `
+                <h2>Sobre o INSS</h2>
+                <pre>
+O Instituto Nacional de Segurança Social (INSS) é uma instituição pública destinada a assegurar benefícios sociais aos cidadãos moçambicanos, incluindo aposentadorias, pensões, e auxílios diversos.
+
+Digite 9 para Voltar
+Digite 0 para Sair
+                </pre>
+            `;
+        }
+
+        function showAjuda() {
+            document.getElementById('ussd-content').innerHTML = `
+                <h2>Ajuda</h2>
+                <pre>
+Para navegar, digite o número correspondente à opção desejada.
+
+Use 9 para voltar ao menu anterior.
+
+Use 0 para encerrar a sessão.
+
+Digite o número e pressione a tecla numérica.
+                </pre>
+            `;
+        }
+
+        function endSession() {
+            document.getElementById('ussd-content').innerHTML = `
+                <div class="loading">
+                    <p style="font-size: 16px; color: #4caf50;">Sessão encerrada</p>
+                    <p>Obrigado por usar os serviços INSS</p>
+                </div>
+            `;
+            setTimeout(() => {
+                closeUssdScreen();
+            }, 2000);
+        }
+
+        // Navegação via teclado
+        document.addEventListener('keydown', function (event) {
+            if (document.getElementById('dialer-screen').style.display !== 'none') {
+                // Digitando no discador
+                if (event.key >= '0' && event.key <= '9') {
+                    addDigit(event.key);
+                } else if (event.key === '*') {
+                    addDigit('*');
+                } else if (event.key === '#') {
+                    addDigit('#');
+                } else if (event.key === 'Enter') {
+                    makeCall();
+                } else if (event.key === 'Backspace') {
+                    backspace();
+                }
+            } else if (
+                document.getElementById('ussd-screen').classList.contains('active')
+            ) {
+                // Navegando no menu USSD com teclado
+                if (event.key >= '0' && event.key <= '9') {
+                    selectOption(event.key);
+                }
+                // Não define nenhuma ação para Backspace dentro do menu (pode ser implementado se quiser)
+            }
+        });
+    </script>
 </body>
 </html>
