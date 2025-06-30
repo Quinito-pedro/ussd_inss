@@ -1,2 +1,2 @@
 # ussd_inss
-meu projecto novo
+Meu projecto novo, simulador USSD que funciona totalmente offline.
