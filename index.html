@@ -348,7 +348,7 @@
     const ussdInputContainer = document.getElementById('ussd-input-container');
 
     const mockUser = {
-        nome: "Quinito Pedro Luis",
+        nome: "Joao Antonio Silva",
         inscricao: "123456789",
         nascimento: "01/01/1980",
         estado: "Activo",
@@ -423,6 +423,34 @@ function confirmarNumeroBeneficiario(destino) {
             </div>
         `;
     }
+    function showPinScreen() {
+    document.getElementById('ussd-content').innerHTML = `
+        <h2>Segurança Social</h2>
+        <p style="margin-bottom:10px;">Introduza o PIN de entrada:</p>
+        <input id="pin-input" type="password" maxlength="10"
+            style="padding:10px; width:100%; font-size:16px; border-radius:5px; background:#222; color:#eee; border:none;"
+            placeholder="PIN de acesso" />
+        <button class="ussd-button" onclick="validatePin()">Validar PIN</button>
+        <p id="pin-error" style="color:#f44336; font-size:13px; margin-top:8px;"></p>
+    `;
+    hideUssdInput();
+    setTimeout(() => {
+        document.getElementById('pin-input').focus();
+    }, 100);
+}
+function validatePin() {
+    const pinInput = document.getElementById('pin-input');
+    const pin = pinInput.value.trim();
+    const errorText = document.getElementById('pin-error');
+    
+    if (pin === '2025') {
+        showMainMenu();
+    } else {
+        errorText.textContent = 'PIN incorreto. Por favor, contacte a DELEGAÇÃO MAIS PRÓXIMA.';
+        pinInput.value = '';
+        pinInput.focus();
+    }
+}
 
     // Abrir menu principal e focar input USSD
     function showMainMenu(showError = false) {
@@ -649,20 +677,20 @@ Digite 0 para Sair
 
     // Fazer chamada: aceitar só *122# para entrar no menu
     function makeCall() {
-        if (currentNumber === '*122#') {
-            document.getElementById('dialer-screen').style.display = 'none';
-            document.getElementById('ussd-screen').classList.add('active');
-            showLoading();
-            setTimeout(() => {
-                showMainMenu();
-            }, 1500);
-        } else if (currentNumber.trim() === '') {
-            alert('Digite um número primeiro');
-        } else {
-            alert('Código USSD inválido. Use *122# para acessar o INSS');
-            clearNumber();
-        }
+    if (currentNumber === '*122#') {
+        document.getElementById('dialer-screen').style.display = 'none';
+        document.getElementById('ussd-screen').classList.add('active');
+        showLoading();
+        setTimeout(() => {
+            showPinScreen();  // agora mostra a tela de PIN antes do menu
+        }, 1500);
+    } else if (currentNumber.trim() === '') {
+        alert('Digite um número primeiro');
+    } else {
+        alert('Código USSD inválido. Use *122# para acessar o INSS');
+        clearNumber();
     }
+}
 
     // Navegação por teclado no discador e no menu
     document.addEventListener('keydown', function(event) {
